@@ -16,7 +16,13 @@ def compute_area(coords):
     float
         Signed area of the triangle (positive if nodes are counter-clockwise).
     """
-    raise NotImplementedError
+    #raise NotImplementedError
+    x0, y0 = coords[0];
+    x1, y1 = coords[1];
+    x2, y2 = coords[2];
+
+    area = 0.5 * (x0*(y1 - y2) + x1*(y2 -y0) + x2*(y0 -y1))
+    return area
 
 
 def compute_B(coords):
