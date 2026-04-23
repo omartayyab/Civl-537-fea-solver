@@ -28,7 +28,27 @@ def assemble_K(nodes, elements, D, thickness):
     For each element, extract the 6 global DOF indices from the 3 node indices,
     then scatter the 6x6 element stiffness into the global matrix.
     """
-    raise NotImplementedError
+    #raise NotImplementedError
+
+    n_nodes = len(nodes)
+    n_dof = 2 * n_nodes #CST
+    K = lil_matrix((n_dof,n_dof))
+
+    for el in elements:
+    
+        node_indices = el #obtain nodal IDs from elements matrix
+
+        coords = nodes [node_indices] # get the coordinates for all of the nodes of the element
+
+        ke = compute_k(coords, D, thickness) 
+        
+        dofs = []
+
+        for node_idx in node_indices:
+            dofs.append(2*node_idx)
+            dofs.append(2*node_idx + 1)
+        K[np.ix_(dofs, dofs)] += ke
+    return K.tocsr()
 
 
 def assemble_R_parabolic_shear(nodes, loaded_nodes, P, h):
@@ -62,7 +82,48 @@ def assemble_R_parabolic_shear(nodes, loaded_nodes, P, h):
     where N_a and N_b are the linear (1D) shape functions along the edge.
     Verify: R.sum() should equal P (global force equilibrium).
     """
-    raise NotImplementedError
+  #  raise NotImplementedError
+
+    n_nodes = len(nodes)
+    R = np.zeros(2 * n_nodes)
+    
+    # Sort nodes
+    loaded_nodes.sort(key=lambda idx: nodes[idx, 1])
+    
+    # 2-point Gauss Quadrature data table
+    gauss_pts = [-1/np.sqrt(3), 1/np.sqrt(3)]
+    gauss_wts = [1.0, 1.0]
+    
+    # The traction distribution along the tip edge (x = L) is: ty(y) = (3P/2h) * (1 - 4y^2/h^2)
+    def get_ty(y):
+        return (3 * P / (2 * h)) * (1 - 4 * y**2 / h**2)
+
+    # 3. Loop over each edge segment
+    for i in range(len(loaded_nodes) - 1):
+        idx_a = loaded_nodes[i]
+        idx_b = loaded_nodes[i+1]
+        
+        y_a = nodes[idx_a, 1]
+        y_b = nodes[idx_b, 1]
+        L_seg = y_b - y_a  # Length of the segment
+        detJ = L_seg / 2.0 # J = L/2
+        
+        # Integrate over this segment
+        for z, w in zip(gauss_pts, gauss_wts):
+            # location of the Gauss point.. "Displacement mapping"
+            y = (y_a + y_b)/2 + z * (L_seg/2)
+            
+            ty = get_ty(y)
+            
+            # Linear shape functions at Gauss point
+            Na = (1 - z) / 2
+            Nb = (1 + z) / 2
+            
+            # Add to the global Y-direction DOFs (2*idx + 1)
+            R[2 * idx_a + 1] += w * ty * Na * detJ
+            R[2 * idx_b + 1] += w * ty * Nb * detJ
+            
+    return R
 
 
 def assemble_R_uniform_tension(nodes, loaded_nodes, sigma_inf, thickness):
