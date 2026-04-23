@@ -32,7 +32,53 @@ def generate_rect_mesh(L, h, nx, ny):
         - 'fixed': list of node indices on the x=0 boundary (cantilever root)
         - 'loaded': list of node indices on the x=L boundary (cantilever tip)
     """
-    raise NotImplementedError
+    #raise NotImplementedError
+
+
+    dx = np.linspace(0,L,nx+1) # dx+1 or dy + 1 nodes
+    dy = np.linspace(-h/2,h/2,ny+1) # centerline y = 0 such that truss is  [-h/2, h/2]
+    X,Y = np.meshgrid(dx,dy)
+    nodes = np.column_stack((X.flatten(), Y.flatten()))
+
+    # Build connectivity matrix
+    elements = []
+    nodes_per_row = nx + 1
+
+    for i in range (ny):
+        for j in range (nx):
+            n0= i*nodes_per_row + j
+            n1 = n0 + 1
+            n2 = n0 + nodes_per_row
+            n3 = n2 + 1
+            elements.append([n0, n1, n3])
+            elements.append([n0, n3, n2])
+            
+    elements = np.array(elements)
+
+    # Define boundary conditions.
+    fixed_nodes = []
+    loading_nodes = []
+
+    for j in range (ny+1):
+
+        fixed_nodes.append(j*nodes_per_row) #1st node of each row.
+        loading_nodes.append(j*nodes_per_row + nx) #last node of each row.
+
+    boundary_tags = {
+        'fixed': fixed_nodes,
+        'loaded': loading_nodes
+    }
+
+    # print("--- MESH GENERATION CHECK ---")
+    # print(f"Total Nodes: {len(nodes)}")
+    # print(f"Total Elements: {len(elements)}")
+    # print("First 5 Nodes (X, Y):")
+    # print(nodes[:5])  # Prints just the first 5 rows
+    # print("Fixed Boundary Node IDs:")
+    # print(boundary_tags['fixed'])
+
+    return nodes, elements, boundary_tags
+
 
 
 def generate_plate_with_hole_mesh(W, H, R, n_radial, n_angular):
@@ -123,3 +169,27 @@ def load_fallback_hole_mesh(filepath=None):
         'sym_y': data['sym_y'].tolist(),
     }
     return nodes, elements, boundary_tags
+
+
+
+# --- MATLAB COMMAND WINDOW EQUIVALENT ---
+# This block ONLY runs if you run this specific file directly.
+if __name__ == "__main__":
+    
+    # 1. We create some fake inputs to test the function
+    test_L = 2.0
+    test_h = 0.5
+    test_nx = 4
+    test_ny = 2
+    
+    # 2. We call the function
+    n, e, tags = generate_rect_mesh(test_L, test_h, test_nx, test_ny)
+    
+    # 3. We print the results to check our math
+    print("--- MESH TEST RESULTS ---")
+    print(f"Number of Nodes: {len(n)}")
+    print(f"Number of Elements: {len(e)}")
+    print("\nFixed Boundary Nodes:")
+    print(tags['fixed'])
+    print("\nLoaded Boundary Nodes:")
+    print(tags['loaded'])
