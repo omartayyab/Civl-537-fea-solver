@@ -296,7 +296,7 @@ with tab2:
         theta_cent = np.arctan2(centroids_h[:, 1], centroids_h[:, 0])
 
         element_length = (W - R) / (n_rad - 1)
-        search_radius = R + (element_length * 0.45)
+        search_radius = R + (element_length * 0.55)
         near_hole = r_cent < search_radius
         
         if not np.any(near_hole):
@@ -435,7 +435,7 @@ with tab3:
                 element_length = (W_h - R_h) / (nr - 1)
                 
                 # Set the search boundary to just past the centroid of the first ring
-                search_radius = R_h + (element_length * 0.45)
+                search_radius = R_h + (element_length * 0.55)
                 near = r_hc < search_radius
                 
                 # Safety check if elements are distorted
