@@ -6,6 +6,8 @@ import numpy as np
 import plotly.graph_objects as go
 import pandas as pd
 
+from src.postprocess import compute_nodal_stresses
+
 from src.elements import compute_D
 from src.mesh import generate_rect_mesh, generate_plate_with_hole_mesh
 from src.assembly import assemble_K, assemble_R_parabolic_shear, assemble_R_uniform_tension
@@ -71,16 +73,37 @@ def plot_deformed_mesh(nodes, elements, u, stresses, scale, title="Deformed Mesh
         colorbar=dict(title="σ_vm (Pa)"),
         flatshading=True,
     ))
+#     fig.update_layout(
+#         title=title,
+#         scene=dict(
+#             xaxis_title="x (m)", yaxis_title="y (m)",
+#             zaxis=dict(visible=False),
+#             aspectmode='data',
+#             camera=dict(eye=dict(x=0, y=0, z=2)),
+#         ),
+#         height=500, margin=dict(l=0, r=0, t=30, b=0),
+#     )
+
+#     fig.update_yaxes(
+#     scaleanchor="x",
+#     scaleratio=1
+# )
     fig.update_layout(
         title=title,
         scene=dict(
             xaxis_title="x (m)", yaxis_title="y (m)",
             zaxis=dict(visible=False),
-            aspectmode='data',
-            camera=dict(eye=dict(x=0, y=0, z=2)),
+            # This is the magic part:
+            aspectmode='data', 
+            camera=dict(
+                eye=dict(x=0, y=0, z=2),
+                up=dict(x=0, y=1, z=0), # Tells Plotly which way is 'up'
+                projection=dict(type='orthographic') # Removes 3D perspective distortion
+            )
         ),
-        height=500, margin=dict(l=0, r=0, t=30, b=0),
+        height=500, margin=dict(l=0, r=0, t=30, b=0)
     )
+
     return fig
 
 
@@ -185,6 +208,25 @@ with tab1:
         fig4.add_trace(go.Scatter(x=tau_anal, y=y_anal,
                                   mode='lines', name='Timoshenko', line=dict(dash='dash')))
         fig4.update_layout(xaxis_title="τ_xy (Pa)", yaxis_title="y (m)", height=400)
+        
+    
+    
+        # Take the raw FEA points (tau_mid and y_mid) and average every pair
+        y_raw = y_mid[sort_m]
+        tau_raw = tau_mid[sort_m]
+
+        # smoothen
+        y_smooth = (y_raw[0::2] + y_raw[1::2]) / 2
+        tau_smooth = (tau_raw[0::2] + tau_raw[1::2]) / 2
+
+        # Add the smooth trend line to the existing chart
+        fig4.add_trace(go.Scatter(
+            x=tau_smooth, 
+            y=y_smooth,
+            mode='lines',
+            name='Average shear at Element centroids',
+            line=dict(color='red', width=2, dash='dash')
+        ))
         st.plotly_chart(fig4, use_container_width=True)
 
         # ── CSV export ──
