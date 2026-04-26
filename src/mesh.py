@@ -69,14 +69,6 @@ def generate_rect_mesh(L, h, nx, ny):
         'loaded': loading_nodes
     }
 
-    # print("--- MESH GENERATION CHECK ---")
-    # print(f"Total Nodes: {len(nodes)}")
-    # print(f"Total Elements: {len(elements)}")
-    # print("First 5 Nodes (X, Y):")
-    # print(nodes[:5])  # Prints just the first 5 rows
-    # print("Fixed Boundary Node IDs:")
-    # print(boundary_tags['fixed'])
-
     return nodes, elements, boundary_tags
 
 
@@ -132,8 +124,81 @@ def generate_plate_with_hole_mesh(W, H, R, n_radial, n_angular):
     pre-generated mesh from data/plate_with_hole_mesh.npz. This lets you
     proceed with the rest of the project while you work on your own mesher.
     """
-    raise NotImplementedError
 
+    # 1. Setup Grid in (r, theta) space
+    # Theta goes from 0 to 90 degrees (pi/2) for the first quadrant
+    r_vals = np.linspace(R, W, n_radial)
+    theta_vals = np.linspace(0, np.pi/2, n_angular)
+    
+    nodes = []
+    for i in range(n_radial):
+        # radial_factor goes from 0 (hole) to 1 (outer edge)
+        radial_factor = i / (n_radial - 1)
+        for j in range(n_angular):
+            theta = (np.pi / 2) * (j / (n_angular - 1))
+            
+            # 1. Start with the hole radius
+            r_inner = R
+            
+            # 2. Calculate the "target" distance to the rectangular edge
+            # This is the "Magic Step" to make it square
+            r_outer = min(W / np.cos(theta), H / np.sin(theta)) if 0 < theta < np.pi/2 else (W if theta == 0 else H)
+            
+            # 3. Interpolate between the hole and the square edge
+            r = r_inner + radial_factor * (r_outer - r_inner)
+            
+            # 4. Map to Cartesian
+            x = r * np.cos(theta)
+            y = r * np.sin(theta)
+            nodes.append([x, y])
+        
+    nodes = np.array(nodes)
+
+    # 2. Connectivity (Triangles)
+    elements = []
+    for i in range(n_radial - 1):
+        for j in range(n_angular - 1):
+            p1 = i * n_angular + j
+            p2 = i * n_angular + (j + 1)
+            p3 = (i + 1) * n_angular + (j + 1)
+            p4 = (i + 1) * n_angular + j
+            elements.append([p1, p4, p2])
+            elements.append([p4, p3, p2])
+    elements = np.array(elements)
+
+# Define boundary nodes using your loop style
+    sym_x_nodes = [] # The bottom edge (y=0)
+    right_nodes = [] # The right edge (x=W)
+    sym_y_nodes = [] # The left edge (x=0)
+    hole_nodes  = [] # The inner circle (r=R)
+
+    for i in range(n_radial):
+        for j in range(n_angular):
+            node_idx = i * n_angular + j
+            
+            # 1. The Hole is the very first radial ring (i = 0)
+            if i == 0:
+                hole_nodes.append(node_idx)
+            
+            # 2. sym_x is the first angular line (theta = 0)
+            if j == 0:
+                sym_x_nodes.append(node_idx)
+            
+            # 3. sym_y is the last angular line (theta = pi/2)
+            if j == n_angular - 1:
+                sym_y_nodes.append(node_idx)
+            
+            # 4. right is the last radial ring (i = n_radial - 1)
+            if i == n_radial - 1:
+                right_nodes.append(node_idx)
+
+    boundary_tags = {
+        'hole': hole_nodes,
+        'right': right_nodes,
+        'sym_x': sym_x_nodes,
+        'sym_y': sym_y_nodes
+    }
+    return nodes, elements, boundary_tags
 
 def load_fallback_hole_mesh(filepath=None):
     """
@@ -171,25 +236,3 @@ def load_fallback_hole_mesh(filepath=None):
     return nodes, elements, boundary_tags
 
 
-
-# --- MATLAB COMMAND WINDOW EQUIVALENT ---
-# This block ONLY runs if you run this specific file directly.
-if __name__ == "__main__":
-    
-    # 1. We create some fake inputs to test the function
-    test_L = 2.0
-    test_h = 0.5
-    test_nx = 4
-    test_ny = 2
-    
-    # 2. We call the function
-    n, e, tags = generate_rect_mesh(test_L, test_h, test_nx, test_ny)
-    
-    # 3. We print the results to check our math
-    print("--- MESH TEST RESULTS ---")
-    print(f"Number of Nodes: {len(n)}")
-    print(f"Number of Elements: {len(e)}")
-    print("\nFixed Boundary Nodes:")
-    print(tags['fixed'])
-    print("\nLoaded Boundary Nodes:")
-    print(tags['loaded'])

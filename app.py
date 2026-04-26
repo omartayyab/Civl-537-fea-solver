@@ -261,8 +261,8 @@ with tab2:
         R = st.number_input("Hole radius R (m)", value=1.0, key="hole_R")
         sigma_inf = st.number_input("Far-field stress σ∞ (Pa)", value=1e6, format="%.2e",
                                      key="hole_sigma")
-        n_rad = st.slider("Radial divisions", 4, 24, 10, key="hole_nrad")
-        n_ang = st.slider("Angular divisions", 4, 24, 12, key="hole_nang")
+        n_rad = st.slider("Radial divisions", 4, 100, 10, key="hole_nrad")
+        n_ang = st.slider("Angular divisions", 3, 101, 13, step=2, key="hole_nang")
         solve_hole = st.button("Solve Plate with Hole", type="primary")
 
     # Mesh preview
@@ -295,8 +295,13 @@ with tab2:
         r_cent = np.sqrt(centroids_h[:, 0]**2 + centroids_h[:, 1]**2)
         theta_cent = np.arctan2(centroids_h[:, 1], centroids_h[:, 0])
 
-        hole_tol = 1.5 * R * (1.0 / n_rad)
-        near_hole = r_cent < (R + hole_tol)
+        element_length = (W - R) / (n_rad - 1)
+        search_radius = R + (element_length * 0.45)
+        near_hole = r_cent < search_radius
+        
+        if not np.any(near_hole):
+            near_hole = r_cent < (R + element_length * 1.1)
+
         theta_near = theta_cent[near_hole]
         sig_xx_near = stresses_h[near_hole, 0]
         sig_yy_near = stresses_h[near_hole, 1]
@@ -422,7 +427,22 @@ with tab3:
                 cent_hc = np.mean(nodes_hc[elems_hc], axis=1)
                 r_hc = np.sqrt(cent_hc[:, 0]**2 + cent_hc[:, 1]**2)
                 th_hc = np.arctan2(cent_hc[:, 1], cent_hc[:, 0])
-                near = r_hc < R_h * 1.3
+
+
+
+                #near = r_hc < R_h * 1.3
+            #      Dynamically calculate the length of the first row of elements
+                element_length = (W_h - R_h) / (nr - 1)
+                
+                # Set the search boundary to just past the centroid of the first ring
+                search_radius = R_h + (element_length * 0.45)
+                near = r_hc < search_radius
+                
+                # Safety check if elements are distorted
+                if not np.any(near):
+                    near = r_hc < (R_h + element_length * 1.1)
+
+
                 sig_tt_hc = (stresses_hc[near, 0] * np.sin(th_hc[near])**2
                              + stresses_hc[near, 1] * np.cos(th_hc[near])**2
                              - 2 * stresses_hc[near, 2] * np.sin(th_hc[near]) * np.cos(th_hc[near]))

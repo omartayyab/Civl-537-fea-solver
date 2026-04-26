@@ -144,4 +144,35 @@ def assemble_R_uniform_tension(nodes, loaded_nodes, sigma_inf, thickness):
     -------
     R : ndarray, shape (n_dof,)
     """
-    raise NotImplementedError
+
+    n_nodes = len(nodes)
+    # R is the global load vector: size is 2 * number of nodes (x and y for each)
+    R = np.zeros(2 * n_nodes)
+
+    # 1. Sort the right boundary nodes by their y-coordinate (bottom to top)
+    # This ensures we connect the dots in the right order along the edge
+    sorted_right = sorted(loaded_nodes, key=lambda idx: nodes[idx][1])
+
+    # 2. Loop through each line segment on the boundary
+    for i in range(len(sorted_right) - 1):
+        n1 = sorted_right[i]
+        n2 = sorted_right[i+1]
+        
+        y1 = nodes[n1][1]
+        y2 = nodes[n2][1]
+        
+       
+        L = abs(y2 - y1)
+        
+        # Total force on this segment = Stress * Area = Stress * (Length * thickness)
+        force_segment = sigma_inf * L * thickness
+        
+        # Distribute the force equally to the two nodes (Tributary Area Method)
+        f_x = force_segment / 2.0
+        
+        # Add the forces to the x-degree of freedom for each node
+        # The x-DOF is always at index (2 * node_index)
+        R[2 * n1] += f_x
+        R[2 * n2] += f_x
+
+    return R
