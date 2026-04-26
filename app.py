@@ -405,8 +405,8 @@ with tab3:
     with conv_col2:
         st.markdown("##### Plate with Hole: Stress Concentration Convergence")
         if st.button("Run Hole Convergence", key="conv_hole"):
-            rad_sizes = [4, 6, 8, 12, 16, 20]
-            W_h, H_h, R_h, sig_h = 5.0, 5.0, 1.0, 1e6
+            rad_sizes = [4, 6, 8, 12, 16, 20, 50, 100]
+            W_h, H_h, R_h, sig_h = 10, 10, 1.0, 1e6
             D_hconv = compute_D(E, nu, mode_key)
             kt_list, n_elems_h_list = [], []
 

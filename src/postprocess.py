@@ -23,10 +23,7 @@ def compute_stresses(nodes, elements, u, D):
     stresses = np.zeros((n_elems, 3))
     
     for i, el in enumerate(elements):
-        # 1. Get the coordinates of the element's nodes
         coords = nodes[el]
-        
-        # 2. Compute the B matrix (Strain-Displacement matrix)
         B = compute_B(coords)
         
         # 3. Extract the local displacements for these specific nodes
