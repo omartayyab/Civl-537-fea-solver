@@ -4,33 +4,33 @@
 import numpy as np
 
 
-def timoshenko_deflection(x, L, h, P, E, nu):
+def timoshenko_deflection(x, L, h, P, E, nu, t):
     """
     Vertical deflection v(x, y=0) along the neutral axis of a tip-loaded cantilever.
     From Timoshenko & Goodier, Theory of Elasticity.
     Includes both bending and shear deformation contributions.
     """
-    I = 0.01*h**3 / 12
+    I = t*h**3 / 12
     G = E / (2 * (1 + nu))
     return (P / (6 * E * I)) * (3 * L * x**2 - x**3) + \
            (P / (2 * G * I)) * (L - x) * (h**2 / 4)
 
 
-def euler_bernoulli_deflection(x, L, P, E, h):
+def euler_bernoulli_deflection(x, L, P, E, h,t):
     """Vertical deflection from classical beam theory (no shear deformation)."""
-    I = 0.01 * h**3 / 12
+    I = t * h**3 / 12
     return P * x**2 * (3 * L - x) / (6 * E * I)
 
 
-def timoshenko_sigma_xx(x, y, L, P, h):
+def timoshenko_sigma_xx(x, y, L, P, h,t):
     """Normal stress sigma_xx(x, y) in a tip-loaded cantilever from elasticity theory."""
-    I = 0.01 * h**3 / 12
+    I = t * h**3 / 12
     return -P * (L - x) * y / I
 
 
-def timoshenko_tau_xy(y, P, h):
+def timoshenko_tau_xy(y, P, h,t):
     """Shear stress tau_xy(y) across the beam depth from elasticity theory."""
-    I = 0.01 * h**3 / 12
+    I = t * h**3 / 12
     return (P / (2 * I)) * (h**2 / 4 - y**2)
 
 

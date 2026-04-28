@@ -125,8 +125,7 @@ def generate_plate_with_hole_mesh(W, H, R, n_radial, n_angular):
     proceed with the rest of the project while you work on your own mesher.
     """
 
-    # 1. Setup Grid in (r, theta) space
-    # Theta goes from 0 to 90 degrees (pi/2) for the first quadrant
+
     r_vals = np.linspace(R, W, n_radial)
     theta_vals = np.linspace(0, np.pi/2, n_angular)
     
@@ -137,17 +136,12 @@ def generate_plate_with_hole_mesh(W, H, R, n_radial, n_angular):
         for j in range(n_angular):
             theta = (np.pi / 2) * (j / (n_angular - 1))
             
-            # 1. Start with the hole radius
             r_inner = R
+       
             
-            # 2. Calculate the "target" distance to the rectangular edge
-            # This is the "Magic Step" to make it square
             r_outer = min(W / np.cos(theta), H / np.sin(theta)) if 0 < theta < np.pi/2 else (W if theta == 0 else H)
-            
-            # 3. Interpolate between the hole and the square edge
             r = r_inner + radial_factor * (r_outer - r_inner)
             
-            # 4. Map to Cartesian
             x = r * np.cos(theta)
             y = r * np.sin(theta)
             nodes.append([x, y])

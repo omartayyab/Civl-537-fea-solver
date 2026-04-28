@@ -32,21 +32,11 @@ def apply_bc_and_solve(K, R, fixed_dofs):
         - Symmetry on x=0: fix u-DOFs of nodes on x=0
     """
     n_dof = len(R)
-    
-    # 1. Identify all DOFs (0 to n_dof - 1)
     all_dofs = np.arange(n_dof)
-    
-    # 2. Identify 'Free' DOFs (the complement of fixed_dofs)
     free_dofs = np.setdiff1d(all_dofs, fixed_dofs)
-    
-    # 3. Extract the submatrix K_ff and subvector R_f
     K_ff = K[np.ix_(free_dofs, free_dofs)]
     R_f = R[free_dofs]
-    
-    # 4. Solve K_ff u_f = R_f using scipy's sparse solver
     u_f = spsolve(K_ff, R_f)
-    
-    # 5. Scatter u_f back into the full displacement vector
     u = np.zeros(n_dof)
     u[free_dofs] = u_f
     

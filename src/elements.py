@@ -130,14 +130,9 @@ def compute_k(coords, D, thickness):
     Since B is constant over the element, the integral simplifies to
     a single multiplication (no numerical quadrature needed).
     """
-    #raise NotImplementedError
 
-    # A is a scalar, B is 3x6, D is 3x3
     A = abs(compute_area(coords))
     B = compute_B(coords)
-    
-    # Formula: k = t * A * B.T @ D @ B
-    # @ is the symbol for matrix multiplication
     k = thickness * A * (B.T @ D @ B)
     return k
 
